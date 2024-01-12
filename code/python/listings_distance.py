@@ -7,20 +7,25 @@ def trouver_listings_proches(commune_collection,distance):
         '$project': {
             '_id': 0,
             'commune': '$properties.commune',
-            'mairie_coords': '$geometry.geometries.coordinates'
+            'centre_coords': '$geometry.geometries.coordinates'
         }
     },  # Étape 3: Projeter les champs nécessaires et renommer certains champs
     {
         '$lookup': {
             'from': 'listings_geojson',
-            'let': { 'mairie_coords': '$mairie_coords' },
+            'let': { 'centre_coords': '$centre_coords' },
             'pipeline': [
                 {
-                    '$geoNear': {
-                        'near': { 'type': 'Point', 'coordinates': '$$mairie_coords' },
-                        'distanceField': 'distance',
-                        'maxDistance': distance,
-                        'spherical': True
+                    # near: Point de référence pour le calcul des distances
+                    '$geoNear': {  
+                        # near: Point de référence pour le calcul des distances
+                        'near': { 'type': 'Point', 'coordinates': '$$centre_coords' },    
+                        # distanceField: Champ qui contiendra les distances calculées    
+                        'distanceField': 'distance', 
+                        # maxDistance: Distance maximale entre le point de référence et les documents à retourner (en mètres)  
+                        # peut etre remplacé par minDistance pour avoir les points les plus éloignés                                                    
+                        'maxDistance': distance,                                                   
+                                                                                                        
                     }
                 },
                 { '$project': { '_id': 0, 'properties': 1, 'geometry': 1, 'distance': 1 } }
@@ -35,6 +40,7 @@ def trouver_listings_proches(commune_collection,distance):
             'geometry': { 'type': 'Point', 'coordinates': '$Features.geometry.coordinates' },
             'properties': {
                 'id': '$Features.properties.id',
+                'distance': '$Features.distance',
                 'name': '$Features.properties.name',
                 'neighbourhood_cleansed': '$Features.properties.neighbourhood_cleansed'
             }
